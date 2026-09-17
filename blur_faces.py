@@ -169,7 +169,8 @@ def main():
     ap.add_argument("--max-missed", type=int, default=10, help="追従を保持する最大フレーム数(チラつき対策)")
     ap.add_argument("--cut-threshold", type=float, default=18.0,
                      help="シーンカット検知の感度(小さいほど敏感。0でカット検知を無効化)")
-    ap.add_argument("--crf", type=int, default=18, help="出力の画質(小さいほど高画質・大きいファイル)")
+    ap.add_argument("--bitrate", type=int, default=100,
+                     help="出力ビットレート(Mbps)。元素材と同等以上を目安に(4K高品質素材なら80〜120程度)")
     ap.add_argument("--preview", action="store_true", help="処理結果を画面表示しながら実行(デバッグ用、遅くなる)")
     args = ap.parse_args()
 
@@ -213,8 +214,11 @@ def main():
         if args.duration:
             encode_cmd += ["-t", str(args.duration)]
         encode_cmd += ["-map", "0:v", "-map", "1:a", "-c:a", "copy"]
+    bitrate_bps = args.bitrate * 1_000_000
     encode_cmd += [
-        "-c:v", "h264_videotoolbox", "-b:v", "0", "-q:v", str(args.crf),
+        "-c:v", "h264_videotoolbox",
+        "-b:v", str(bitrate_bps), "-maxrate", str(int(bitrate_bps * 1.5)),
+        "-bufsize", str(bitrate_bps * 2),
         "-pix_fmt", "yuv420p", args.output,
     ]
 
